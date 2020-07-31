@@ -1,6 +1,6 @@
 import { type } from "os";
 import assert from "assert";
-import { basename } from "path";
+import { basename, resolve } from "path";
 import { Currency } from "./Currency";
 import { promisify } from "./promisify";
 import { readFile, readFileSync } from "fs"
@@ -163,6 +163,48 @@ let boot: Sneaker = Shoe('boot')
 let printSneaker = (s: Sneaker) => console.log(s.purpose)
 printSneaker(Shoe('boot'))
 
+// Exercise 6.1
+let la: 1 = 1
+let ra: number = la
+let lb: number = 4
+// let rb: 1 = lb <- assignment not allowed
+let lc: string = "hello"
+let rc: number | string = lc
+let ld: boolean = true
+// let rd: number = ld <- assignment not allowed
+let le = [2, 3, 4]
+let re: (number | string)[] = le
+let lf = [2, 3, '4']
+// let rf: number[] = lf <- assignment not allowed
+let lg: true = true
+let rg: boolean = lg
+let lh: {a: {b: [string]}} = {a: {b: ["hello"]}}
+let rh: {a: {b: [number|string]}} = lh
+let li: (a: number) => string = _ => _.toString() 
+let ri: (b: number) => string = li
+let lj: (a: number) => string = _ => _.toString() 
+// let rj: (b: string) => string = lj <- assignment not allowed
+let lk: (a: number | string) => string = _ => _.toString() 
+let rk: (b: string) => string = lk
+enum E { X = 'X'}
+enum F { X = 'X'}
+const ll = E.X
+// const rl: F.X = ll <- assignment not allowed
+
+// Exercise 6.2
+type O = {a: {b: {c: string}}}
+type keysOfO = keyof O
+type Oab = O['a']['b']
+
+// Exercise 6.3
+type Exclusive<T, U> = Exclude<T, U> | Exclude<U, T>
+type excl = Exclusive<1 | 2 | 3, 2 | 3 | 4>
+
+// Exercise 6.4
+function fetchUser() { return "42" }
+let userId: string = fetchUser()
+userId.toUpperCase()
+
 function ff<T extends unknown[]>(a: number, b: string,  ...rest: T) {
     for (let b of rest) {
         console.log(typeof b)
@@ -177,8 +219,40 @@ let readFilePromise = promisify(readFileSync) // in this version of Node readFil
 readFilePromise("./src/index.ts")
     .then((result) => console.log("Successfuly read the file: ", result))
     .catch((error) => console.error("An error occured: ", error))
-    
-
+/*    
+// Exercise 8.2
+type Matrix = number[][]
+type MatrixProtocol = {
+    determinant: {
+        in: [Matrix]
+        out: number
+    }
+    'out-product': {
+        in: [Matrix, Matrix]
+        out: Matrix
+    }
+    invert: {
+        in: [Matrix]
+        out: Matrix
+    }
+}
+type Protocol = {
+    [command: string]: {
+        in: unknown[]
+        out: unknown
+    }
+}
+function createProtocol<P extends Protocol>(script: string) {
+    return <K extends keyof P>(command: K) =>
+    (...args: P[K]['in']) => 
+    new Promise<P[K]['out']>((resolve, reject) => {
+        let worker = new Worker(script)
+        worker.onerror = reject
+        worker.onmessage = event => resolve(event.data.data)
+        worker.postMessage({omma})
+    })
+}
+*/
 // Exercise 10.1
 // a
 let amountDue: Currency = {
