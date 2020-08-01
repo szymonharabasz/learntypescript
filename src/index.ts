@@ -4,6 +4,7 @@ import { basename, resolve } from "path";
 import { Currency } from "./Currency";
 import { promisify } from "./promisify";
 import { readFile, readFileSync } from "fs"
+import { Worker } from "worker_threads"; 
 
 type Cat = {name: string, purrs: boolean};
 type Dog = {name: string, barks: boolean, wags: boolean};
@@ -219,7 +220,7 @@ let readFilePromise = promisify(readFileSync) // in this version of Node readFil
 readFilePromise("./src/index.ts")
     .then((result) => console.log("Successfuly read the file: ", result))
     .catch((error) => console.error("An error occured: ", error))
-/*    
+    
 // Exercise 8.2
 type Matrix = number[][]
 type MatrixProtocol = {
@@ -244,15 +245,22 @@ type Protocol = {
 }
 function createProtocol<P extends Protocol>(script: string) {
     return <K extends keyof P>(command: K) =>
-    (...args: P[K]['in']) => 
-    new Promise<P[K]['out']>((resolve, reject) => {
-        let worker = new Worker(script)
-        worker.onerror = reject
-        worker.onmessage = event => resolve(event.data.data)
-        worker.postMessage({omma})
-    })
+        (...args: P[K]['in']) =>
+            new Promise<P[K]['out']>((resolve, reject) => {
+                let worker = new Worker(script)
+                worker.on('error', reject)
+                worker.on('message', event => resolve(event.data))
+                worker.postMessage({ command, args })
+            })
 }
-*/
+
+let runWithMatrixProtocol = createProtocol<MatrixProtocol>('./dist/MatrixWorkerScript.js')
+let parallelDeterminant = runWithMatrixProtocol('determinant')
+
+parallelDeterminant([[1,2],[3,4]])
+    .then(determinant => console.log("Determinant: ", determinant))
+    .catch(error => console.error("An error occured: ", error))
+
 // Exercise 10.1
 // a
 let amountDue: Currency = {
