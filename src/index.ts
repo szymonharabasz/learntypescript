@@ -4,7 +4,8 @@ import { basename, resolve } from "path";
 import { Currency } from "./Currency";
 import { promisify } from "./promisify";
 import { readFile, readFileSync } from "fs"
-import { Worker } from "worker_threads"; 
+import { Worker } from "worker_threads";
+import { Protocol, MatrixProtocol, Matrix } from "./MatrixProtocol"
 
 type Cat = {name: string, purrs: boolean};
 type Dog = {name: string, barks: boolean, wags: boolean};
@@ -222,27 +223,6 @@ readFilePromise("./src/index.ts")
     .catch((error) => console.error("An error occured: ", error))
     
 // Exercise 8.2
-type Matrix = number[][]
-type MatrixProtocol = {
-    determinant: {
-        in: [Matrix]
-        out: number
-    }
-    'out-product': {
-        in: [Matrix, Matrix]
-        out: Matrix
-    }
-    invert: {
-        in: [Matrix]
-        out: Matrix
-    }
-}
-type Protocol = {
-    [command: string]: {
-        in: unknown[]
-        out: unknown
-    }
-}
 function createProtocol<P extends Protocol>(script: string) {
     return <K extends keyof P>(command: K) =>
         (...args: P[K]['in']) =>
@@ -256,9 +236,25 @@ function createProtocol<P extends Protocol>(script: string) {
 
 let runWithMatrixProtocol = createProtocol<MatrixProtocol>('./dist/MatrixWorkerScript.js')
 let parallelDeterminant = runWithMatrixProtocol('determinant')
+let parallelInvert = runWithMatrixProtocol('invert')
+let parallelOutProduct = runWithMatrixProtocol('out-product')
 
-parallelDeterminant([[1,2],[3,4]])
+let m1: Matrix = [[1,1,1],[1,2,1],[1,1,3]]
+let m2: Matrix = [[1,2],[3,4]]
+let m3: Matrix = [[1,1],[2,2]]
+/*
+parallelDeterminant(m1)
     .then(determinant => console.log("Determinant: ", determinant))
+    .catch(error => console.error("An error occured: ", error))
+parallelDeterminant(m2)
+    .then(determinant => console.log("Determinant: ", determinant))
+    .catch(error => console.error("An error occured: ", error))
+parallelInvert(m2)
+    .then(invert => console.log("Invert matrix: ", invert))
+    .catch(error => console.error("An error occured: ", error))
+*/
+    parallelOutProduct(m3, m2)
+    .then(outprod => console.log("Outer product: ", outprod))
     .catch(error => console.error("An error occured: ", error))
 
 // Exercise 10.1
@@ -282,3 +278,5 @@ namespace Day {
 }
 console.log(Day.isWeekend(Day.Mon))
 console.log(Day.isWeekend(Day.Sat))
+
+// 4.4, 5.4, 7.1, 8.2, 8.3, 
