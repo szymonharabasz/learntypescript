@@ -242,7 +242,8 @@ let parallelOutProduct = runWithMatrixProtocol('out-product')
 let m1: Matrix = [[1,1,1],[1,2,1],[1,1,3]]
 let m2: Matrix = [[1,2],[3,4]]
 let m3: Matrix = [[1,1],[2,2]]
-/*
+let m4: Matrix = [[2]]
+
 parallelDeterminant(m1)
     .then(determinant => console.log("Determinant: ", determinant))
     .catch(error => console.error("An error occured: ", error))
@@ -252,8 +253,8 @@ parallelDeterminant(m2)
 parallelInvert(m2)
     .then(invert => console.log("Invert matrix: ", invert))
     .catch(error => console.error("An error occured: ", error))
-*/
-    parallelOutProduct(m3, m2)
+
+parallelOutProduct(m2, m3)
     .then(outprod => console.log("Outer product: ", outprod))
     .catch(error => console.error("An error occured: ", error))
 
