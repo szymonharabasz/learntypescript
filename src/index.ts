@@ -71,10 +71,10 @@ let reserve: Reserve = (
 }
 
 console.log(reserve('Cracow')!.from);
-/*
+
 // Exercise 4.4
-function call<T extends unknown[], R>(
-    f: (aa: any, bb: string, ...argz: T) => R,
+function call<T extends unknown[], U, R>(
+    f: (aa: U, bb: string, ...argz: T) => R,
     a: any,
     b: string,
     ...args: T
@@ -82,17 +82,19 @@ function call<T extends unknown[], R>(
     return f(a, b, ...args);
 }
 
-function fill(length: number, value: string): string[] {
+function fill(length: number, value: string, a2: number, a3: number): string[] {
     return Array.from({length}, () => value)
 }
+let aa = call(fill, 10, 'a', 30, 40)
+
+/*
+// As requested in the exercise, one can't use call with function having second argument other than string:
 function fill2(length: number, value: number): number[] {
     return Array.from({length}, () => value)
 }
-
-let aa = call(fill2, 10, 'a')
-let bb = call(fill, 10, 20)
-console.log(aa)
+let bb = call(fill2, 10, 20) 
 */
+
 // Exercise 4.5
 function is<T>(...args: T[]): boolean {
     return args.slice(1).every(_ => _ === args[0])
@@ -207,13 +209,13 @@ function fetchUser() { return "42" }
 let userId: string = fetchUser()
 userId.toUpperCase()
 
-function ff<T extends unknown[]>(a: number, b: string,  ...rest: T) {
-    for (let b of rest) {
-        console.log(typeof b)
-    }
+// Exercise 7.1
+type UserID = string
+class API {
+    getLoggedInUserId(): UserID { return "qwe123" }
+    getFriendIDs(userID: UserID): UserID[] { return ["asd456", "yxc789"] }
+    getUserName(userID: UserID): string { return "Szymon" }
 }
-
-ff(4, '4', 4, true)
 
 // Exercise 8.1
 let readFilePromise = promisify(readFileSync) // in this version of Node readFile has second parameter mandatory
@@ -280,4 +282,4 @@ namespace Day {
 console.log(Day.isWeekend(Day.Mon))
 console.log(Day.isWeekend(Day.Sat))
 
-// 4.4, 5.4, 7.1, 8.2, 8.3, 
+// 5.4, 7.1, 8.3, 
