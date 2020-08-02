@@ -167,6 +167,34 @@ let boot: Sneaker = Shoe('boot')
 let printSneaker = (s: Sneaker) => console.log(s.purpose)
 printSneaker(Shoe('boot'))
 
+// Exercise 5.4
+class RequestBuilder {
+    private url: string | null = null
+    private method: 'get' | 'post' | null = null
+    private data: object | null = null
+
+    setURL(url: string): this {
+        this.url = url
+        return this
+    }
+    setMethod(method: 'get' | 'post'): this {
+        this.method = method
+        return this
+    }
+    setData(data: object): this {
+        this.data = data
+        return this
+    }
+    send() {
+        // do nothing
+    }
+}
+new RequestBuilder()
+    .setURL("www.example.com")
+    .setMethod("post")
+    .setData({a: "foo", b: "bar"})
+    .send()
+
 // Exercise 6.1
 let la: 1 = 1
 let ra: number = la
