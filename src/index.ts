@@ -6,6 +6,9 @@ import { promisify } from "./promisify";
 import { readFile, readFileSync } from "fs"
 import { Worker } from "worker_threads";
 import { Protocol, MatrixProtocol, Matrix } from "./MatrixProtocol"
+import { METHODS } from "http";
+import { SSL_OP_NO_QUERY_MTU } from "constants";
+import { send } from "process";
 
 type Cat = {name: string, purrs: boolean};
 type Dog = {name: string, barks: boolean, wags: boolean};
@@ -169,31 +172,49 @@ printSneaker(Shoe('boot'))
 
 // Exercise 5.4
 class RequestBuilder {
-    private url: string | null = null
-    private method: 'get' | 'post' | null = null
-    private data: object | null = null
-
-    setURL(url: string): this {
+    protected data: object | null = null
+    protected url: string | null = null
+    protected method: 'get' | 'post' | null = null 
+    set(data: object | null, url: string | null, method: 'get' | 'post' | null) {
+        this.data = data
         this.url = url
-        return this
+        this.method =method
     }
-    setMethod(method: 'get' | 'post'): this {
-        this.method = method
-        return this
+    
+    setURL(url: string): RequestBuilderWithURL { 
+        let result = new RequestBuilderWithURL
+        result.set(this.data, url, this.method)
+        return result
     }
-    setData(data: object): this {
+    setData = (data: object): this => {
         this.data = data
         return this
     }
-    send() {
-        // do nothing
+}
+class RequestBuilderWithMethod extends RequestBuilder {
+    setURL(url: string): RequestBuilderWithUrlAndMethod { 
+        let result = new RequestBuilderWithUrlAndMethod
+        result.set(this.data, url, this.method)
+        return result
     }
 }
-new RequestBuilder()
+class RequestBuilderWithURL extends RequestBuilder {
+    setMethod(method: 'get' | 'post'): RequestBuilderWithUrlAndMethod {
+        let result = new RequestBuilderWithUrlAndMethod
+        result.set(this.data, this.url, method)
+        return result
+    }
+}
+class RequestBuilderWithUrlAndMethod extends RequestBuilderWithURL {
+    send = () => { console.log("SENDING REQUEST...", this.url, this.method, this.data) }
+}
+
+console.log("COMBINED OBJECT: ", (new RequestBuilder()
     .setURL("www.example.com")
     .setMethod("post")
     .setData({a: "foo", b: "bar"})
     .send()
+))
 
 // Exercise 6.1
 let la: 1 = 1
