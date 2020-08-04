@@ -9,6 +9,7 @@ import { Protocol, MatrixProtocol, Matrix } from "./MatrixProtocol"
 import { METHODS } from "http";
 import { SSL_OP_NO_QUERY_MTU } from "constants";
 import { send } from "process";
+import { runInThisContext } from "vm";
 
 type Cat = {name: string, purrs: boolean};
 type Dog = {name: string, barks: boolean, wags: boolean};
@@ -172,49 +173,69 @@ printSneaker(Shoe('boot'))
 
 // Exercise 5.4
 class RequestBuilder {
-    protected data: object | null = null
-    protected url: string | null = null
-    protected method: 'get' | 'post' | null = null 
-    set(data: object | null, url: string | null, method: 'get' | 'post' | null) {
-        this.data = data
+    data: object | null = null
+    url: string | null = null
+    method: 'get' | 'post' | null = null
+    private sendRequest = () => { console.log("SENDING REQUEST ", this.method, " TO ", this.url, " WITH", this.data) }
+
+    setMethod = (method: 'get' | 'post') => {
+        console.log("BAD SETMETHOD CALLED")
+        this.method = method
+        return {
+            data: this.data,
+            method: this.method,
+            url: this.url,
+            setData: this.setData,
+            setMethod: this.setMethod,
+            setURL: (url: string) => {
+                this.url = url
+                return {
+                    data: this.data,
+                    method: this.method,
+                    url: this.url,
+                    setData: this.setData,
+                    setMethod: this.setMethod,
+                    setURL: this.setURL,
+                    send: this.sendRequest
+                }
+            }
+        }
+    }
+
+    setURL = (url: string) => {
         this.url = url
-        this.method =method
+        return {
+            data: this.data,
+            method: this.method,
+            url: this.url,
+            setData: this.setData,
+            setURL: this.setURL,
+            setMethod: (method: 'get' | 'post') => {
+                this.method = method
+                return {
+                    data: this.data,
+                    method: this.method,
+                    url: this.url,
+                    setData: this.setData,
+                    setMethod: this.setMethod,
+                    setURL: this.setURL,
+                    send: this.sendRequest
+                }
+            }
+        }
     }
-    
-    setURL(url: string): RequestBuilderWithURL { 
-        let result = new RequestBuilderWithURL
-        result.set(this.data, url, this.method)
-        return result
-    }
-    setData = (data: object): this => {
+    setData = (data: object) => {
         this.data = data
-        return this
+        return { ...this }
     }
-}
-class RequestBuilderWithMethod extends RequestBuilder {
-    setURL(url: string): RequestBuilderWithUrlAndMethod { 
-        let result = new RequestBuilderWithUrlAndMethod
-        result.set(this.data, url, this.method)
-        return result
-    }
-}
-class RequestBuilderWithURL extends RequestBuilder {
-    setMethod(method: 'get' | 'post'): RequestBuilderWithUrlAndMethod {
-        let result = new RequestBuilderWithUrlAndMethod
-        result.set(this.data, this.url, method)
-        return result
-    }
-}
-class RequestBuilderWithUrlAndMethod extends RequestBuilderWithURL {
-    send = () => { console.log("SENDING REQUEST...", this.url, this.method, this.data) }
 }
 
-console.log("COMBINED OBJECT: ", (new RequestBuilder()
+console.log(new RequestBuilder()
+    .setData({ a: "foo", b: "bar" })
     .setURL("www.example.com")
     .setMethod("post")
-    .setData({a: "foo", b: "bar"})
     .send()
-))
+)
 
 // Exercise 6.1
 let la: 1 = 1
@@ -259,11 +280,59 @@ let userId: string = fetchUser()
 userId.toUpperCase()
 
 // Exercise 7.1
+interface Option<T> {
+    map<U>(f: (value: T) => U): Option<U>
+    flatMap<U>(f: (value: T) => Option<U>): Option<U>
+    getOrElse(value: T): T
+}
+class Some<T> implements Option<T> {
+    constructor(private value: T) {}
+    map<U>(f: (value: T) => U): Option<U> {
+        return new Some(f(this.value))
+    }
+    flatMap<U>(f: (value: T) => Option<U>): Option<U> {
+        return f(this.value)
+    }
+    getOrElse(value: T): T { return this.value }
+}
+class None implements Option<never> {
+    map<U>(): Option<U> { return this }
+    flatMap<U>(): Option<U> { return this }
+    getOrElse<U>(value: U): U { return value }
+}
+
 type UserID = string
+class User {
+    constructor(public id: UserID, public name: string, public friends: UserID[]) {}
+}
+class UserRepository {
+    constructor(public users: User[]) {}
+    findById(id: UserID): Option<User> {
+        for (let i = 0; i < this.users.length; ++i) {
+            if (this.users[i].id === id) {
+                return new Some(this.users[i])
+            }
+        }
+        return new None
+    }
+}
+let userRepository = new UserRepository([
+    new User("qwe123", "Szymon", ["asd456", "yxc789"]),
+    new User("asd456", "Gosia", ["qwe123"]),
+    new User("yxc789", "Florian", ["qwe123"]),
+])
+let user = new User("qwe123", "Szymon", ["asd456", "yxc789"])
 class API {
-    getLoggedInUserId(): UserID { return "qwe123" }
-    getFriendIDs(userID: UserID): UserID[] { return ["asd456", "yxc789"] }
-    getUserName(userID: UserID): string { return "Szymon" }
+    constructor(private loggedIn: boolean) {}
+    getLoggedInUserId(): Option<UserID> { 
+        if (this.loggedIn) {
+            return new Some(userRepository.users[0].id)
+        } else {
+            return new None
+        }
+    }
+    getFriendIDs(userID: Option<UserID>): Option<UserID[]> { return userID.flatMap(id => userRepository.findById(id)).map(user => user.friends) }
+    getUserName(userID: Option<UserID>): Option<string> { return userID.flatMap(id => userRepository.findById(id)).map(user => user.name) }
 }
 
 // Exercise 8.1
